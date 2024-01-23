@@ -1,0 +1,15 @@
+service: simple-aws-lambda
+
+provider:
+  name: aws
+  runtime: java17
+  region: us-east-1
+  timeout: 10
+  memorySize: 1024
+
+package:
+  artifact: target/simple-aws-lambda.jar
+
+functions:
+  simpleLambda:
+    handler: ma.DS.SimpleLambda
