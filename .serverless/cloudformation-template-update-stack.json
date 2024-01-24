@@ -77,6 +77,12 @@
         "LogGroupName": "/aws/lambda/simple-aws-lambda-dev-simpleLambda"
       }
     },
+    "SimpleHttpLogGroup": {
+      "Type": "AWS::Logs::LogGroup",
+      "Properties": {
+        "LogGroupName": "/aws/lambda/simple-aws-lambda-dev-simpleHttp"
+      }
+    },
     "IamRoleLambdaExecution": {
       "Type": "AWS::IAM::Role",
       "Properties": {
@@ -162,13 +168,18 @@
           "S3Bucket": {
             "Ref": "ServerlessDeploymentBucket"
           },
-          "S3Key": "serverless/simple-aws-lambda/dev/1706052836042-2024-01-23T23:33:56.042Z/target/simple-aws-lambda.jar"
+          "S3Key": "serverless/simple-aws-lambda/dev/1706058703100-2024-01-24T01:11:43.100Z/target/simple-aws-lambda.jar"
         },
         "Handler": "ma.DS.SimpleLambda",
         "Runtime": "java17",
         "FunctionName": "simple-aws-lambda-dev-simpleLambda",
         "MemorySize": 1024,
         "Timeout": 10,
+        "Environment": {
+          "Variables": {
+            "MESSAGE": "Hamza brs"
+          }
+        },
         "Role": {
           "Fn::GetAtt": [
             "IamRoleLambdaExecution",
@@ -180,15 +191,145 @@
         "SimpleLambdaLogGroup"
       ]
     },
-    "SimpleLambdaLambdaVersion17EGwvG17aTImOkXhzQiDH4yrVvkD6bvWxRj447CBk": {
+    "SimpleHttpLambdaFunction": {
+      "Type": "AWS::Lambda::Function",
+      "Properties": {
+        "Code": {
+          "S3Bucket": {
+            "Ref": "ServerlessDeploymentBucket"
+          },
+          "S3Key": "serverless/simple-aws-lambda/dev/1706058703100-2024-01-24T01:11:43.100Z/target/simple-aws-lambda.jar"
+        },
+        "Handler": "ma.DS.SimpleHttpHandler",
+        "Runtime": "java17",
+        "FunctionName": "simple-aws-lambda-dev-simpleHttp",
+        "MemorySize": 1024,
+        "Timeout": 10,
+        "Role": {
+          "Fn::GetAtt": [
+            "IamRoleLambdaExecution",
+            "Arn"
+          ]
+        }
+      },
+      "DependsOn": [
+        "SimpleHttpLogGroup"
+      ]
+    },
+    "SimpleLambdaLambdaVersionwdWjVj9UyZNaoYPOdLVzreE2fBKhcsMzsWVdDpjk4HE": {
       "Type": "AWS::Lambda::Version",
       "DeletionPolicy": "Retain",
       "Properties": {
         "FunctionName": {
           "Ref": "SimpleLambdaLambdaFunction"
         },
-        "CodeSha256": "v1wLEd+fiH/SwHZqhNeQXYzifArTPCvBUu2ecSm7PmI="
+        "CodeSha256": "FYmgkkPqEIdQiwnaFI9TSKsx76PmoU0/eNMRcW3xLS4="
       }
+    },
+    "SimpleHttpLambdaVersion7JSwtw21xUKQHpWFMBbOQ7CT1TzUFv84qv03PzoRSk": {
+      "Type": "AWS::Lambda::Version",
+      "DeletionPolicy": "Retain",
+      "Properties": {
+        "FunctionName": {
+          "Ref": "SimpleHttpLambdaFunction"
+        },
+        "CodeSha256": "FYmgkkPqEIdQiwnaFI9TSKsx76PmoU0/eNMRcW3xLS4="
+      }
+    },
+    "HttpApi": {
+      "Type": "AWS::ApiGatewayV2::Api",
+      "Properties": {
+        "Name": "dev-simple-aws-lambda",
+        "ProtocolType": "HTTP"
+      }
+    },
+    "HttpApiStage": {
+      "Type": "AWS::ApiGatewayV2::Stage",
+      "Properties": {
+        "ApiId": {
+          "Ref": "HttpApi"
+        },
+        "StageName": "$default",
+        "AutoDeploy": true,
+        "DefaultRouteSettings": {
+          "DetailedMetricsEnabled": false
+        }
+      }
+    },
+    "SimpleHttpLambdaPermissionHttpApi": {
+      "Type": "AWS::Lambda::Permission",
+      "Properties": {
+        "FunctionName": {
+          "Fn::GetAtt": [
+            "SimpleHttpLambdaFunction",
+            "Arn"
+          ]
+        },
+        "Action": "lambda:InvokeFunction",
+        "Principal": "apigateway.amazonaws.com",
+        "SourceArn": {
+          "Fn::Join": [
+            "",
+            [
+              "arn:",
+              {
+                "Ref": "AWS::Partition"
+              },
+              ":execute-api:",
+              {
+                "Ref": "AWS::Region"
+              },
+              ":",
+              {
+                "Ref": "AWS::AccountId"
+              },
+              ":",
+              {
+                "Ref": "HttpApi"
+              },
+              "/*"
+            ]
+          ]
+        }
+      }
+    },
+    "HttpApiIntegrationSimpleHttp": {
+      "Type": "AWS::ApiGatewayV2::Integration",
+      "Properties": {
+        "ApiId": {
+          "Ref": "HttpApi"
+        },
+        "IntegrationType": "AWS_PROXY",
+        "IntegrationUri": {
+          "Fn::GetAtt": [
+            "SimpleHttpLambdaFunction",
+            "Arn"
+          ]
+        },
+        "PayloadFormatVersion": "2.0",
+        "TimeoutInMillis": 30000
+      }
+    },
+    "HttpApiRoutePostSimple": {
+      "Type": "AWS::ApiGatewayV2::Route",
+      "Properties": {
+        "ApiId": {
+          "Ref": "HttpApi"
+        },
+        "RouteKey": "POST /simple",
+        "Target": {
+          "Fn::Join": [
+            "/",
+            [
+              "integrations",
+              {
+                "Ref": "HttpApiIntegrationSimpleHttp"
+              }
+            ]
+          ]
+        }
+      },
+      "DependsOn": "HttpApiIntegrationSimpleHttp"
     }
   },
   "Outputs": {
@@ -203,10 +344,53 @@
     "SimpleLambdaLambdaFunctionQualifiedArn": {
       "Description": "Current Lambda function version",
       "Value": {
-        "Ref": "SimpleLambdaLambdaVersion17EGwvG17aTImOkXhzQiDH4yrVvkD6bvWxRj447CBk"
+        "Ref": "SimpleLambdaLambdaVersionwdWjVj9UyZNaoYPOdLVzreE2fBKhcsMzsWVdDpjk4HE"
       },
       "Export": {
         "Name": "sls-simple-aws-lambda-dev-SimpleLambdaLambdaFunctionQualifiedArn"
+      }
+    },
+    "SimpleHttpLambdaFunctionQualifiedArn": {
+      "Description": "Current Lambda function version",
+      "Value": {
+        "Ref": "SimpleHttpLambdaVersion7JSwtw21xUKQHpWFMBbOQ7CT1TzUFv84qv03PzoRSk"
+      },
+      "Export": {
+        "Name": "sls-simple-aws-lambda-dev-SimpleHttpLambdaFunctionQualifiedArn"
+      }
+    },
+    "HttpApiId": {
+      "Description": "Id of the HTTP API",
+      "Value": {
+        "Ref": "HttpApi"
+      },
+      "Export": {
+        "Name": "sls-simple-aws-lambda-dev-HttpApiId"
+      }
+    },
+    "HttpApiUrl": {
+      "Description": "URL of the HTTP API",
+      "Value": {
+        "Fn::Join": [
+          "",
+          [
+            "https://",
+            {
+              "Ref": "HttpApi"
+            },
+            ".execute-api.",
+            {
+              "Ref": "AWS::Region"
+            },
+            ".",
+            {
+              "Ref": "AWS::URLSuffix"
+            }
+          ]
+        ]
+      },
+      "Export": {
+        "Name": "sls-simple-aws-lambda-dev-HttpApiUrl"
       }
     }
   }

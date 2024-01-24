@@ -13,3 +13,12 @@ package:
 functions:
   simpleLambda:
     handler: ma.DS.SimpleLambda
+    environment:
+      MESSAGE: Hamza brs
+
+  simpleHttp:
+    handler: ma.DS.SimpleHttpHandler
+    events:
+      - httpApi:
+          path: /simple
+          method: POST  # Use uppercase POST
