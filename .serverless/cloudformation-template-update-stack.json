@@ -83,6 +83,12 @@
         "LogGroupName": "/aws/lambda/simple-aws-lambda-dev-simpleHttp"
       }
     },
+    "SimpleEventTriggerLogGroup": {
+      "Type": "AWS::Logs::LogGroup",
+      "Properties": {
+        "LogGroupName": "/aws/lambda/simple-aws-lambda-dev-simpleEventTrigger"
+      }
+    },
     "IamRoleLambdaExecution": {
       "Type": "AWS::IAM::Role",
       "Properties": {
@@ -140,6 +146,27 @@
                       "Fn::Sub": "arn:${AWS::Partition}:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/lambda/simple-aws-lambda-dev*:*:*"
                     }
                   ]
+                },
+                {
+                  "Effect": "Allow",
+                  "Action": [
+                    "s3:*"
+                  ],
+                  "Resource": [
+                    "arn:aws:s3:::hamza-custom-bucket/*",
+                    {
+                      "Fn::Join": [
+                        "",
+                        [
+                          "arn:aws:s3:::",
+                          {
+                            "Ref": "ServerlessDeploymentBucket"
+                          },
+                          "/*"
+                        ]
+                      ]
+                    }
+                  ]
                 }
               ]
             }
@@ -168,7 +195,7 @@
           "S3Bucket": {
             "Ref": "ServerlessDeploymentBucket"
           },
-          "S3Key": "serverless/simple-aws-lambda/dev/1706058703100-2024-01-24T01:11:43.100Z/target/simple-aws-lambda.jar"
+          "S3Key": "serverless/simple-aws-lambda/dev/1706143048031-2024-01-25T00:37:28.031Z/target/simple-aws-lambda.jar"
         },
         "Handler": "ma.DS.SimpleLambda",
         "Runtime": "java17",
@@ -198,7 +225,7 @@
           "S3Bucket": {
             "Ref": "ServerlessDeploymentBucket"
           },
-          "S3Key": "serverless/simple-aws-lambda/dev/1706058703100-2024-01-24T01:11:43.100Z/target/simple-aws-lambda.jar"
+          "S3Key": "serverless/simple-aws-lambda/dev/1706143048031-2024-01-25T00:37:28.031Z/target/simple-aws-lambda.jar"
         },
         "Handler": "ma.DS.SimpleHttpHandler",
         "Runtime": "java17",
@@ -216,24 +243,119 @@
         "SimpleHttpLogGroup"
       ]
     },
-    "SimpleLambdaLambdaVersionwdWjVj9UyZNaoYPOdLVzreE2fBKhcsMzsWVdDpjk4HE": {
+    "SimpleEventTriggerLambdaFunction": {
+      "Type": "AWS::Lambda::Function",
+      "Properties": {
+        "Code": {
+          "S3Bucket": {
+            "Ref": "ServerlessDeploymentBucket"
+          },
+          "S3Key": "serverless/simple-aws-lambda/dev/1706143048031-2024-01-25T00:37:28.031Z/target/simple-aws-lambda.jar"
+        },
+        "Handler": "ma.DS.SimpleEventHandler",
+        "Runtime": "java17",
+        "FunctionName": "simple-aws-lambda-dev-simpleEventTrigger",
+        "MemorySize": 1024,
+        "Timeout": 10,
+        "Role": {
+          "Fn::GetAtt": [
+            "IamRoleLambdaExecution",
+            "Arn"
+          ]
+        }
+      },
+      "DependsOn": [
+        "SimpleEventTriggerLogGroup"
+      ]
+    },
+    "SimpleLambdaLambdaVersion7ZDYoRCck2IszIbBIBNm3hfl0WlWL6BN7O1SZItBU": {
       "Type": "AWS::Lambda::Version",
       "DeletionPolicy": "Retain",
       "Properties": {
         "FunctionName": {
           "Ref": "SimpleLambdaLambdaFunction"
         },
-        "CodeSha256": "FYmgkkPqEIdQiwnaFI9TSKsx76PmoU0/eNMRcW3xLS4="
+        "CodeSha256": "jLac8YMcp6I16JRtO5/QqRoxdLnrRgvVJcx8tV80Bw0="
       }
     },
-    "SimpleHttpLambdaVersion7JSwtw21xUKQHpWFMBbOQ7CT1TzUFv84qv03PzoRSk": {
+    "SimpleHttpLambdaVersionvl7RPzDVGQhDwVOdzZnojCfWRkvNrVvXwYY30FaxEw": {
       "Type": "AWS::Lambda::Version",
       "DeletionPolicy": "Retain",
       "Properties": {
         "FunctionName": {
           "Ref": "SimpleHttpLambdaFunction"
         },
-        "CodeSha256": "FYmgkkPqEIdQiwnaFI9TSKsx76PmoU0/eNMRcW3xLS4="
+        "CodeSha256": "jLac8YMcp6I16JRtO5/QqRoxdLnrRgvVJcx8tV80Bw0="
+      }
+    },
+    "SimpleEventTriggerLambdaVersionwj0cBGlw7B6nXoTZnIZmYClkexwJBYD7ZSty2aip90": {
+      "Type": "AWS::Lambda::Version",
+      "DeletionPolicy": "Retain",
+      "Properties": {
+        "FunctionName": {
+          "Ref": "SimpleEventTriggerLambdaFunction"
+        },
+        "CodeSha256": "jLac8YMcp6I16JRtO5/QqRoxdLnrRgvVJcx8tV80Bw0="
+      }
+    },
+    "S3BucketHamzacustombucket": {
+      "Type": "AWS::S3::Bucket",
+      "Properties": {
+        "BucketName": "hamza-custom-bucket",
+        "NotificationConfiguration": {
+          "LambdaConfigurations": [
+            {
+              "Event": "s3:ObjectCreated:*",
+              "Function": {
+                "Fn::GetAtt": [
+                  "SimpleEventTriggerLambdaFunction",
+                  "Arn"
+                ]
+              },
+              "Filter": {
+                "S3Key": {
+                  "Rules": [
+                    {
+                      "Name": "suffix",
+                      "Value": ".png"
+                    }
+                  ]
+                }
+              }
+            }
+          ]
+        }
+      },
+      "DependsOn": [
+        "SimpleEventTriggerLambdaPermissionHamzacustombucketS3"
+      ]
+    },
+    "SimpleEventTriggerLambdaPermissionHamzacustombucketS3": {
+      "Type": "AWS::Lambda::Permission",
+      "Properties": {
+        "FunctionName": {
+          "Fn::GetAtt": [
+            "SimpleEventTriggerLambdaFunction",
+            "Arn"
+          ]
+        },
+        "Action": "lambda:InvokeFunction",
+        "Principal": "s3.amazonaws.com",
+        "SourceArn": {
+          "Fn::Join": [
+            "",
+            [
+              "arn:",
+              {
+                "Ref": "AWS::Partition"
+              },
+              ":s3:::hamza-custom-bucket"
+            ]
+          ]
+        },
+        "SourceAccount": {
+          "Ref": "AWS::AccountId"
+        }
       }
     },
     "HttpApi": {
@@ -344,7 +466,7 @@
     "SimpleLambdaLambdaFunctionQualifiedArn": {
       "Description": "Current Lambda function version",
       "Value": {
-        "Ref": "SimpleLambdaLambdaVersionwdWjVj9UyZNaoYPOdLVzreE2fBKhcsMzsWVdDpjk4HE"
+        "Ref": "SimpleLambdaLambdaVersion7ZDYoRCck2IszIbBIBNm3hfl0WlWL6BN7O1SZItBU"
       },
       "Export": {
         "Name": "sls-simple-aws-lambda-dev-SimpleLambdaLambdaFunctionQualifiedArn"
@@ -353,10 +475,19 @@
     "SimpleHttpLambdaFunctionQualifiedArn": {
       "Description": "Current Lambda function version",
       "Value": {
-        "Ref": "SimpleHttpLambdaVersion7JSwtw21xUKQHpWFMBbOQ7CT1TzUFv84qv03PzoRSk"
+        "Ref": "SimpleHttpLambdaVersionvl7RPzDVGQhDwVOdzZnojCfWRkvNrVvXwYY30FaxEw"
       },
       "Export": {
         "Name": "sls-simple-aws-lambda-dev-SimpleHttpLambdaFunctionQualifiedArn"
+      }
+    },
+    "SimpleEventTriggerLambdaFunctionQualifiedArn": {
+      "Description": "Current Lambda function version",
+      "Value": {
+        "Ref": "SimpleEventTriggerLambdaVersionwj0cBGlw7B6nXoTZnIZmYClkexwJBYD7ZSty2aip90"
+      },
+      "Export": {
+        "Name": "sls-simple-aws-lambda-dev-SimpleEventTriggerLambdaFunctionQualifiedArn"
       }
     },
     "HttpApiId": {

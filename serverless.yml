@@ -6,7 +6,15 @@ provider:
   region: us-east-1
   timeout: 10
   memorySize: 1024
-
+  iamRoleStatements:
+    - Effect: 'Allow'
+      Action:
+        - 's3:*'
+      Resource:
+        - 'arn:aws:s3:::${self:custom.myBucket}/*'
+        - !Join [ '', [ 'arn:aws:s3:::', !Ref ServerlessDeploymentBucket, '/*' ] ]
+custom:
+  myBucket: hamza-custom-bucket
 package:
   artifact: target/simple-aws-lambda.jar
 
@@ -22,3 +30,12 @@ functions:
       - httpApi:
           path: /simple
           method: POST  # Use uppercase POST
+
+  simpleEventTrigger:
+    handler: ma.DS.SimpleEventHandler
+    events:
+      - s3:
+          bucket: ${self:custom.myBucket}
+          event: s3:ObjectCreated:*
+          rules:
+            - suffix: .png
